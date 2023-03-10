@@ -7,7 +7,11 @@ DROP TABLE IF EXISTS Test;
 DROP TABLE IF EXISTS Vacuna;
 DROP TABLE IF EXISTS Muertes;
 DROP TABLE IF EXISTS Hospital_UCI;
+<<<<<<< HEAD
 DROP TABLE IF EXISTS Exceso_Mortalidad;
+=======
+DROP TABLE IF EXISTS ExcesoMortalidad;
+>>>>>>> f0472d33a02d20cb69d549f2bbc2a7999f6c3b99
 DROP TABLE IF EXISTS Politica;
 DROP TABLE IF EXISTS Produccion;
 DROP TABLE IF EXISTS Pais;
@@ -281,7 +285,11 @@ SELECT iso_code,population, population_density, median_age, aged_65_older, aged_
                           human_development_index FROM Temp_DatosCSV
 ON CONFLICT (id) DO NOTHING;
 
+<<<<<<< HEAD
 SELECT * FROM DatosGenerales;
+=======
+-- SELECT * FROM DatosGenerales;
+>>>>>>> f0472d33a02d20cb69d549f2bbc2a7999f6c3b99
 
 
 CREATE TABLE IF NOT EXISTS Casos (
@@ -306,6 +314,7 @@ SELECT date,iso_code,total_cases, new_cases, new_cases_smoothed, total_cases_per
        new_cases_per_million, new_cases_smoothed_per_million FROM Temp_DatosCSV
 ON CONFLICT (id) DO NOTHING;
 
+<<<<<<< HEAD
 
 
 
@@ -328,3 +337,172 @@ ON CONFLICT (id) DO NOTHING;
 -- INSERT INTO DATE(date) 
 -- SELECT DISTINCT ON (date) date FROM Temp_DatosCSV
 -- ON CONFLICT (id,date) DO NOTHING;
+=======
+-- Table: Test
+CREATE TABLE Test (
+    id SERIAL  NOT NULL UNIQUE,
+    iso_code VARCHAR(10) NOT NULL,
+    date DATE NOT NULL,
+    total_tests NUMERIC,
+    new_tests NUMERIC,
+    total_tests_per_thousand NUMERIC,
+    new_tests_per_thousand NUMERIC,
+    new_tests_smoothed NUMERIC,
+    new_tests_smoothed_per_thousand NUMERIC,
+    positive_rate NUMERIC,
+    tests_per_case NUMERIC,
+    tests_units varchar(50),
+    FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id) REFERENCES DatosGenerales(id) ON UPDATE CASCADE,
+    CONSTRAINT Test_pk PRIMARY KEY (id)
+);
+
+INSERT INTO Test(iso_code, date , total_tests, 
+    new_tests, total_tests_per_thousand, new_tests_per_thousand,
+    new_tests_smoothed, new_tests_smoothed_per_thousand, positive_rate,
+    tests_per_case, tests_units) 
+SELECT iso_code, date , total_tests, new_tests, total_tests_per_thousand, 
+    new_tests_per_thousand, new_tests_smoothed, new_tests_smoothed_per_thousand, 
+    positive_rate, tests_per_case, tests_units FROM Temp_DatosCSV
+ON CONFLICT (id) DO NOTHING;
+
+SELECT * FROM Test;
+
+-- Table: Vacunas
+CREATE TABLE Vacunas (
+    id SERIAL NOT NULL UNIQUE,
+    iso_code VARCHAR(10) NOT NULL,
+    date DATE NOT NULL,
+    total_vaccinations numeric,
+    people_vaccinated numeric,
+    people_fully_vaccinated numeric,
+    total_boosters numeric,
+    new_vaccinations numeric,
+    new_vaccinations_smoothed numeric,
+    total_vaccinations_per_hundred numeric,
+    people_vaccinated_per_hundred numeric,
+    people_fully_vaccinated_per_hundred numeric,
+    total_boosters_per_hundred numeric,
+    new_vaccinations_smoothed_per_million numeric,
+    new_people_vaccinated_smoothed numeric,
+    new_people_vaccinated_smoothed_per_hundred numeric,
+    FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id) REFERENCES DatosGenerales(id) ON UPDATE CASCADE,
+    CONSTRAINT Vacunas_pk PRIMARY KEY (id)
+);
+
+INSERT INTO Vacunas (iso_code, date, total_vaccinations,
+                  people_vaccinated, people_fully_vaccinated, total_boosters,
+                  new_vaccinations, new_vaccinations_smoothed, total_vaccinations_per_hundred,
+                  people_vaccinated_per_hundred, people_fully_vaccinated_per_hundred,
+                  total_boosters_per_hundred, new_vaccinations_smoothed_per_million,
+                  new_people_vaccinated_smoothed, new_people_vaccinated_smoothed_per_hundred) 
+SELECT iso_code, date, total_vaccinations,
+                  people_vaccinated, people_fully_vaccinated, total_boosters,
+                  new_vaccinations, new_vaccinations_smoothed, total_vaccinations_per_hundred,
+                  people_vaccinated_per_hundred, people_fully_vaccinated_per_hundred,
+                  total_boosters_per_hundred, new_vaccinations_smoothed_per_million,
+                  new_people_vaccinated_smoothed, new_people_vaccinated_smoothed_per_hundred FROM Temp_DatosCSV
+ON CONFLICT (id) DO NOTHING;
+
+
+-- Table: ExcesoMortalidad
+CREATE TABLE ExcesoMortalidad (
+    id SERIAL  NOT NULL UNIQUE,
+    iso_code VARCHAR(10) NOT NULL,
+    date DATE NOT NULL,
+    excess_mortality NUMERIC,
+    excess_mortality_cumulative NUMERIC,
+    excess_mortality_cumulative_absolute NUMERIC,
+    excess_mortality_cumulative_per_million NUMERIC,
+    FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id) REFERENCES DatosGenerales(id) ON UPDATE CASCADE,
+    CONSTRAINT ExcesoMortalidad_pk PRIMARY KEY (id)
+);
+
+INSERT INTO ExcesoMortalidad (iso_code, date, excess_mortality, excess_mortality_cumulative,
+    excess_mortality_cumulative_absolute, excess_mortality_cumulative_per_million) 
+SELECT iso_code, date, excess_mortality, excess_mortality_cumulative,
+    excess_mortality_cumulative_absolute, excess_mortality_cumulative_per_million FROM Temp_DatosCSV
+ON CONFLICT (id) DO NOTHING;
+
+
+-- Table: Hospital_UCI
+CREATE TABLE Hospital_UCI (
+    id SERIAL  NOT NULL UNIQUE,
+    iso_code VARCHAR(10) NOT NULL,
+    date DATE NOT NULL,
+    icu_patients NUMERIC,
+    icu_patients_per_million NUMERIC,
+    hosp_patients NUMERIC,
+    hosp_patients_per_million NUMERIC,
+    weekly_icu_admissions NUMERIC,
+    weekly_icu_admissions_per_million NUMERIC,
+    weekly_hosp_admissions NUMERIC,
+    weekly_hosp_admissions_per_million NUMERIC,
+    FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id) REFERENCES DatosGenerales(id) ON UPDATE CASCADE,
+    CONSTRAINT Hospital_UCI_pk PRIMARY KEY (id)
+);
+
+INSERT INTO  Hospital_UCI (iso_code, date, icu_patients, icu_patients_per_million,
+    hosp_patients, hosp_patients_per_million, weekly_icu_admissions, weekly_icu_admissions_per_million,
+    weekly_hosp_admissions, weekly_hosp_admissions_per_million) 
+SELECT iso_code, date, icu_patients, icu_patients_per_million,
+    hosp_patients, hosp_patients_per_million, weekly_icu_admissions, weekly_icu_admissions_per_million,
+    weekly_hosp_admissions, weekly_hosp_admissions_per_million FROM Temp_DatosCSV
+ON CONFLICT (id) DO NOTHING;
+
+-- Table: Muertes
+CREATE TABLE Muertes (
+    id SERIAL  NOT NULL UNIQUE,
+    iso_code VARCHAR(10) NOT NULL,
+    date DATE NOT NULL,
+    total_deaths NUMERIC,
+    new_deaths NUMERIC,
+    new_deaths_smoothed NUMERIC,
+    total_deaths_per_million NUMERIC,
+    new_deaths_per_million NUMERIC,
+    new_deaths_smoothed_per_million NUMERIC,
+    FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id) REFERENCES DatosGenerales(id) ON UPDATE CASCADE,
+    CONSTRAINT Muertes_pk PRIMARY KEY (id)
+);
+
+
+INSERT INTO  Muertes (iso_code, date, total_deaths, new_deaths, new_deaths_smoothed, total_deaths_per_million,
+    new_deaths_per_million, new_deaths_smoothed_per_million) 
+SELECT iso_code, date, total_deaths, new_deaths, new_deaths_smoothed, total_deaths_per_million,
+    new_deaths_per_million, new_deaths_smoothed_per_million FROM Temp_DatosCSV
+ON CONFLICT (id) DO NOTHING;
+
+-- Table: Politica
+CREATE TABLE Politica (
+    id serial  NOT NULL,
+    stringency_index numeric ,
+    FOREIGN KEY (id) REFERENCES DatosGenerales(id) ON UPDATE CASCADE,
+    CONSTRAINT Politica_pk PRIMARY KEY (id)
+);
+
+
+INSERT INTO  Politica (stringency_index) 
+SELECT stringency_index FROM Temp_DatosCSV
+ON CONFLICT (id) DO NOTHING;
+
+-- Table: Produccion
+CREATE TABLE Produccion (
+    id serial  NOT NULL,
+    reproduction_rate numeric,
+    FOREIGN KEY (id) REFERENCES DatosGenerales(id) ON UPDATE CASCADE,
+    CONSTRAINT Produccion_pk PRIMARY KEY (id)
+);
+
+INSERT INTO  Produccion (reproduction_rate) 
+SELECT reproduction_rate FROM Temp_DatosCSV
+ON CONFLICT (id) DO NOTHING;
+>>>>>>> f0472d33a02d20cb69d549f2bbc2a7999f6c3b99
