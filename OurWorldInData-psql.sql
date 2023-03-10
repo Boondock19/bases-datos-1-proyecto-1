@@ -2,6 +2,52 @@ DROP TABLE IF EXISTS Temp_DatosCSV;
 DROP TABLE IF EXISTS DatosCSV;
 	
 
+CREATE TABLE DateTable (
+  id SERIAL,
+  date_instance DATE NOT NULL,
+  CONSTRAINT PK_Date PRIMARY KEY (id)
+);
+
+CREATE TABLE Country (
+  id SERIAL,
+  iso_code varchar(10) NOT NULL,
+  continent varchar(50),
+  location varchar(100) NOT NULL,
+  population_density NUMERIC,
+  median_age NUMERIC,
+  aged_65_older NUMERIC,
+  aged_70_older NUMERIC,
+  gdp_per_capita NUMERIC,
+  extreme_poverty NUMERIC,
+  cardiovasc_death_rate NUMERIC,
+  diabetes_prevalence NUMERIC,
+  female_smokers NUMERIC,
+  male_smokers NUMERIC,
+  handwashing_facilities NUMERIC,
+  hospital_beds_per_thousand NUMERIC,
+  life_expectancy NUMERIC,
+  human_development_index NUMERIC,
+  population NUMERIC,
+  CONSTRAINT PK_Country PRIMARY KEY (id)
+);
+
+CREATE TABLE CaseTable (
+  id SERIAL,
+  total_cases NUMERIC,
+  new_cases NUMERIC,
+  new_cases_smoothed NUMERIC,
+  total_deaths NUMERIC,
+  new_deaths NUMERIC,
+  new_deaths_smoothed NUMERIC,
+  total_cases_per_million NUMERIC,
+  new_cases_per_million NUMERIC,
+  new_cases_smoothed_per_million NUMERIC,
+  country_id INTEGER NOT NULL,
+  date_id INTEGER NOT NULL,
+  CONSTRAINT PK_Case PRIMARY KEY (id),
+  CONSTRAINT FK_Case_Country FOREIGN KEY (country_id) REFERENCES Country(id),
+  CONSTRAINT FK_Case_Date FOREIGN KEY (date_id) REFERENCES DateTable(id)
+);
 
 CREATE TABLE DatosCSV (
   id SERIAL,
@@ -149,9 +195,10 @@ CREATE TEMP TABLE Temp_DatosCSV (
 --\COPY Temp_DatosCSV  FROM 'owid-covid-data.csv' DELIMITER ',' CSV HEADER;
 \COPY Temp_DatosCSV FROM 'owid-covid-data.csv' WITH (FORMAT csv, DELIMITER ',', HEADER true);
 
-
+/*
 SELECT * FROM Temp_DatosCSV;
 SELECT * FROM DatosCSV;
+*/
 INSERT INTO DatosCSV (iso_code, continent, location, date,
                         total_cases, new_cases, new_cases_smoothed, total_deaths,
                         new_deaths, new_deaths_smoothed, total_cases_per_million,
@@ -201,5 +248,43 @@ SELECT iso_code, continent, location, date, total_cases, new_cases,
           hospital_beds_per_thousand, life_expectancy, human_development_index,
           population, excess_mortality_cumulative_absolute, excess_mortality_cumulative,
            excess_mortality, excess_mortality_cumulative_per_million FROM Temp_DatosCSV;
-
+/*
 SELECT * FROM DatosCSV;
+*/
+
+/*
+SELECT DISTINCT date FROM DatosCSV ORDER BY date;
+*/
+INSERT INTO DateTable (date_instance) SELECT DISTINCT date FROM DatosCSV ORDER BY date;
+/*
+SELECT * FROM DateTable;
+*/
+/*
+SELECT DISTINCT iso_code,continent,location,population,population_density,median_age,aged_65_older,
+aged_70_older,gdp_per_capita,extreme_poverty,cardiovasc_death_rate,diabetes_prevalence,female_smokers,
+male_smokers,handwashing_facilities,hospital_beds_per_thousand,life_expectancy,human_development_index,
+human_development_index FROM DatosCSV ORDER BY iso_code;
+*/
+
+
+INSERT INTO Country (  iso_code,continent ,location ,population_density ,median_age ,aged_65_older ,aged_70_older ,gdp_per_capita ,
+extreme_poverty,cardiovasc_death_rate ,diabetes_prevalence ,female_smokers ,male_smokers ,handwashing_facilities ,hospital_beds_per_thousand ,
+life_expectancy,human_development_index, population ) (SELECT DISTINCT ON (iso_code) iso_code,continent ,location ,population_density ,median_age ,aged_65_older ,aged_70_older ,gdp_per_capita ,
+extreme_poverty,cardiovasc_death_rate ,diabetes_prevalence ,female_smokers ,male_smokers ,handwashing_facilities ,hospital_beds_per_thousand ,
+life_expectancy,human_development_index, population
+FROM DatosCSV ORDER BY iso_code);
+
+
+
+/*
+SELECT COUNT(*) FROM (SELECT DISTINCT iso_code,continent,location,population,population_density,median_age,aged_65_older,
+aged_70_older,gdp_per_capita,extreme_poverty,cardiovasc_death_rate,diabetes_prevalence,female_smokers,
+male_smokers,handwashing_facilities,hospital_beds_per_thousand,life_expectancy,human_development_index,
+human_development_index FROM DatosCSV ORDER BY iso_code) AS FQ;
+*/
+
+/*
+SELECT DISTINCT iso_code,excess_mortality,excess_mortality_cumulative,excess_mortality_cumulative_absolute,excess_mortality_cumulative_per_million,date 
+FROM DatosCSV ORDER BY iso_code;
+*/
+
