@@ -7,11 +7,7 @@ DROP TABLE IF EXISTS Test;
 DROP TABLE IF EXISTS Vacuna;
 DROP TABLE IF EXISTS Muertes;
 DROP TABLE IF EXISTS Hospital_UCI;
-<<<<<<< HEAD
-DROP TABLE IF EXISTS Exceso_Mortalidad;
-=======
 DROP TABLE IF EXISTS ExcesoMortalidad;
->>>>>>> f0472d33a02d20cb69d549f2bbc2a7999f6c3b99
 DROP TABLE IF EXISTS Politica;
 DROP TABLE IF EXISTS Produccion;
 DROP TABLE IF EXISTS Pais;
@@ -285,11 +281,7 @@ SELECT iso_code,population, population_density, median_age, aged_65_older, aged_
                           human_development_index FROM Temp_DatosCSV
 ON CONFLICT (id) DO NOTHING;
 
-<<<<<<< HEAD
-SELECT * FROM DatosGenerales;
-=======
 -- SELECT * FROM DatosGenerales;
->>>>>>> f0472d33a02d20cb69d549f2bbc2a7999f6c3b99
 
 
 CREATE TABLE IF NOT EXISTS Casos (
@@ -314,30 +306,6 @@ SELECT date,iso_code,total_cases, new_cases, new_cases_smoothed, total_cases_per
        new_cases_per_million, new_cases_smoothed_per_million FROM Temp_DatosCSV
 ON CONFLICT (id) DO NOTHING;
 
-<<<<<<< HEAD
-
-
-
-    -- id_date INT NOT NULL, 
-    -- id_pais INT NOT NULL,
--- SELECT * FROM Casos;
-
-
--- CREATE TABLE IF NOT EXISTS Date(
---     id SERIAL  NOT NULL UNIQUE,
---     date DATE  NOT NULL,
---     --FOREIGN KEY (id) REFERENCES DatosCSV(id) ON UPDATE CASCADE,
---     CONSTRAINT Date_pk PRIMARY KEY (id,date)
--- );
-
--- -- INSERT INTO DATE(id, date) 
--- -- SELECT id, date FROM DatosCSV
--- -- ON CONFLICT (id,date) DO NOTHING;
-
--- INSERT INTO DATE(date) 
--- SELECT DISTINCT ON (date) date FROM Temp_DatosCSV
--- ON CONFLICT (id,date) DO NOTHING;
-=======
 -- Table: Test
 CREATE TABLE Test (
     id SERIAL  NOT NULL UNIQUE,
@@ -505,4 +473,3 @@ CREATE TABLE Produccion (
 INSERT INTO  Produccion (reproduction_rate) 
 SELECT reproduction_rate FROM Temp_DatosCSV
 ON CONFLICT (id) DO NOTHING;
->>>>>>> f0472d33a02d20cb69d549f2bbc2a7999f6c3b99
