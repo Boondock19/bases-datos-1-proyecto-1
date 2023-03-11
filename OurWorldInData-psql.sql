@@ -521,14 +521,26 @@ SELECT C.iso_code,C.total_cases,C.date FROM Casos C,
 WHERE C.iso_code = MQ.iso_code AND C.date = MQ.date ORDER BY C.iso_code;
 
 -- Query 5
-SELECT p.continent, p.location,
-       SUM(c.new_cases_per_million) / d.population AS tasa_crecimiento_per_capita
+SELECT p.continent,
+    ((MAX(c.total_cases_per_million) - MIN(c.total_cases_per_million)) / MIN(c.total_cases_per_million)) * 100 AS tasa_crecimiento
 FROM Pais p
-JOIN Casos c ON p.id = c.id AND p.iso_code = c.iso_code
-JOIN DatosGenerales d ON p.id = d.id AND p.iso_code = d.iso_code
-WHERE p.continent IS NOT NULL 
-GROUP BY p.continent, p.location, d.population
-ORDER BY tasa_crecimiento_per_capita DESC;
+    JOIN Casos c ON p.id = c.id AND p.iso_code = c.iso_code
+WHERE c.total_cases_per_million IS NOT NULL
+GROUP BY (p.continent)
+ORDER BY (tasa_crecimiento) DESC;
+
+-- 3?---
+
+SELECT v.iso_code,
+       MAX(CASE WHEN v.total_vaccinations_per_hundred >= 66.666 THEN m.total_deaths END) as muerte_promedio_despues,
+       COALESCE(AVG(CASE WHEN v.total_vaccinations_per_hundred < 66.666 THEN m.total_deaths END), 0) as muerte_promedio_antes,
+       MIN(CASE WHEN v.total_vaccinations_per_hundred >= 66.666 THEN v.date END) as fecha_alcanzo_vacunacion
+FROM Vacunas v
+JOIN Muertes m ON v.id = m.id AND v.iso_code = m.iso_code AND v.date = m.date
+GROUP BY v.iso_code
+HAVING MAX(v.total_vaccinations_per_hundred) >= 66.666
+
+
 
 
 WITH vaccination_rates AS (
