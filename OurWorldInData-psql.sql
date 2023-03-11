@@ -500,10 +500,25 @@ Obtenemos el valor maximo de total case para cada pais
 SELECT iso_code,MAX(total_cases) FROM Casos GROUP BY iso_code;
 */
 
+
 /* Query 2 */
-SELECT c.iso_code,c.total_cases as half_total_cases,c.date,MQ.max_total_cases FROM Casos c, 
-(SELECT iso_code,MAX(total_cases) AS max_total_cases  FROM Casos GROUP BY iso_code) AS MQ 
-WHERE c.total_cases = MQ.max_total_cases / 2 ORDER BY iso_code;
+/* 
+    Como no existen instancias que contengan exactamente  a la mitad
+    de los casos totales para un pais, obtamos por obtener la fecha
+    con el valor mas cercado a la mitad. Este valor es el siguiente
+    superior a la mitad.
+*/
+SELECT C.iso_code,C.total_cases,C.date FROM Casos C, 
+(WITH max_value AS (
+    SELECT iso_code, MAX(total_cases) AS max_total_cases
+    FROM Casos
+    GROUP BY iso_code
+), min_date_value AS (
+    SELECT c.iso_code,MIN(c.date) AS min_date
+    FROM Casos c , max_value
+    WHERE c.total_cases >= max_value.max_total_cases / 2   AND c.iso_code = max_value.iso_code GROUP BY c.iso_code
+) SELECT c.iso_code , c.date FROM Casos c , min_date_value WHERE c.iso_code = min_date_value.iso_code AND c.date = min_date_value.min_date) AS MQ
+WHERE C.iso_code = MQ.iso_code AND C.date = MQ.date ORDER BY C.iso_code;
 
 -- Query 5
 SELECT p.continent, p.location,
@@ -514,3 +529,32 @@ JOIN DatosGenerales d ON p.id = d.id AND p.iso_code = d.iso_code
 WHERE p.continent IS NOT NULL 
 GROUP BY p.continent, p.location, d.population
 ORDER BY tasa_crecimiento_per_capita DESC;
+
+
+WITH vaccination_rates AS (
+  SELECT iso_code,
+         MAX(CASE WHEN people_fully_vaccinated_per_hundred >= 66.666 THEN date END) AS vaccination_date
+  FROM Vacunas
+  GROUP BY iso_code
+),
+pre_vaccination_rates AS (
+  SELECT Muertes.iso_code,
+         AVG(Muertes.new_deaths) AS avg_pre_vaccination_deaths
+  FROM Muertes
+  JOIN vaccination_rates ON Muertes.iso_code = vaccination_rates.iso_code
+  WHERE Muertes.date < vaccination_rates.vaccination_date
+  GROUP BY Muertes.iso_code
+),
+post_vaccination_rates AS (
+  SELECT Muertes.iso_code,
+         AVG(Muertes.new_deaths) AS avg_post_vaccination_deaths
+  FROM Muertes
+  JOIN vaccination_rates ON Muertes.iso_code = vaccination_rates.iso_code
+  WHERE Muertes.date >= vaccination_rates.vaccination_date
+  GROUP BY Muertes.iso_code
+)
+SELECT pre_vaccination_rates.iso_code,
+       pre_vaccination_rates.avg_pre_vaccination_deaths,
+       post_vaccination_rates.avg_post_vaccination_deaths
+FROM pre_vaccination_rates
+JOIN post_vaccination_rates ON pre_vaccination_rates.iso_code = post_vaccination_rates.iso_code;
