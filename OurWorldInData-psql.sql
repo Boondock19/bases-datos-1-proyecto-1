@@ -445,7 +445,9 @@ ON CONFLICT (id) DO NOTHING;
 CREATE TABLE Politica (
     id serial  NOT NULL,
     stringency_index numeric ,
-    CONSTRAINT Politica_pk PRIMARY KEY (id)
+    CONSTRAINT Politica_pk PRIMARY KEY (id),
+    FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE
 );
 
 
@@ -458,7 +460,9 @@ ON CONFLICT (id) DO NOTHING;
 CREATE TABLE Produccion (
     id serial  NOT NULL,
     reproduction_rate numeric,
-    CONSTRAINT Produccion_pk PRIMARY KEY (id)
+    CONSTRAINT Produccion_pk PRIMARY KEY (id),
+    FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE
 );
 
 INSERT INTO  Produccion (id,reproduction_rate) 
@@ -513,7 +517,7 @@ SELECT v.iso_code,
 FROM Vacunas v
 JOIN Muertes m ON v.id = m.id AND v.iso_code = m.iso_code AND v.date = m.date
 GROUP BY v.iso_code
-HAVING MAX(v.total_vaccinations_per_hundred) >= 66.666
+HAVING MAX(v.total_vaccinations_per_hundred) >= 66.666;
 
 
 
