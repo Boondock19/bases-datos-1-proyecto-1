@@ -441,32 +441,37 @@ SELECT id,iso_code, date, total_deaths, new_deaths, new_deaths_smoothed, total_d
     WHERE total_deaths IS NOT NULL AND total_deaths <> 0.0
 ON CONFLICT (id) DO NOTHING;
 
+
 -- Table: Politica
 CREATE TABLE Politica (
-    id serial  NOT NULL,
+    id INT  NOT NULL,
     stringency_index numeric ,
+    iso_code VARCHAR(10) NOT NULL,
+    date DATE NOT NULL,
     CONSTRAINT Politica_pk PRIMARY KEY (id),
     FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
     FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE
 );
 
 
-INSERT INTO  Politica (id,stringency_index) 
-SELECT id,stringency_index FROM DatosCSV
+INSERT INTO  Politica (id,stringency_index,iso_code, date) 
+SELECT id,stringency_index,iso_code, date FROM DatosCSV
 WHERE stringency_index IS NOT NULL AND stringency_index <> 0.0
 ON CONFLICT (id) DO NOTHING;
 
 -- Table: Produccion
 CREATE TABLE Produccion (
-    id serial  NOT NULL,
+    id INT  NOT NULL,
     reproduction_rate numeric,
+    iso_code VARCHAR(10) NOT NULL,
+    date DATE NOT NULL,
     CONSTRAINT Produccion_pk PRIMARY KEY (id),
     FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
     FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE
 );
 
-INSERT INTO  Produccion (id,reproduction_rate) 
-SELECT id,reproduction_rate FROM DatosCSV
+INSERT INTO  Produccion (id,reproduction_rate,iso_code, date) 
+SELECT id,reproduction_rate,iso_code, date FROM DatosCSV
 WHERE reproduction_rate IS NOT NULL AND reproduction_rate <> 0.0
 ON CONFLICT (id) DO NOTHING;
 
@@ -476,7 +481,6 @@ SELECT id, date, new_cases, new_cases_smoothed,
        ROUND(AVG(new_cases) OVER (ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW),4 )AS new_cases_7day_avg,
        CASE WHEN new_cases = new_cases_smoothed THEN 'Igual' ELSE 'Distintos' END AS es_igual
 FROM Casos
-WHERE new_cases IS NOT NULL AND new_cases_smoothed IS NOT NULL
 ORDER BY(id) ASC;
 
 /* Query 2 */
@@ -498,16 +502,6 @@ SELECT C.iso_code,C.total_cases as total_mas_cercano_al_max ,C.date FROM Casos C
 ) SELECT c.iso_code , c.date FROM Casos c , min_date_value WHERE c.iso_code = min_date_value.iso_code AND c.date = min_date_value.min_date) AS MQ
 WHERE C.iso_code = MQ.iso_code AND C.date = MQ.date ORDER BY C.iso_code;
 
--- Query 5
-SELECT p.continent,
-       SUM(c.new_cases_per_million) / SUM(d.population) AS tasa_crecimiento_per_capita
-FROM Pais p
-JOIN Casos c ON p.id = c.id AND p.iso_code = c.iso_code
-JOIN DatosGenerales d ON p.id = d.id AND p.iso_code = d.iso_code
-WHERE p.continent IS NOT NULL
-GROUP BY p.continent
-ORDER BY tasa_crecimiento_per_capita DESC;
-
 -- 3 ---
 
 SELECT v.iso_code,
@@ -519,6 +513,51 @@ JOIN Muertes m ON v.id = m.id AND v.iso_code = m.iso_code AND v.date = m.date
 GROUP BY v.iso_code
 HAVING MAX(v.total_vaccinations_per_hundred) >= 66.666;
 
+
+-- 4 ---
+
+WITH tasas_muerte AS (
+  SELECT v.iso_code,
+         v.total_vaccinations_per_hundred,
+         AVG(CASE WHEN v.total_vaccinations_per_hundred < 66.666 THEN m.total_deaths END) OVER (PARTITION BY v.iso_code) as muerte_promedio_antes,
+         AVG(CASE WHEN v.total_vaccinations_per_hundred >= 66.666 THEN m.total_deaths END) OVER (PARTITION BY v.iso_code) as muerte_promedio_despues,
+         ROUND(ABS(AVG(CASE WHEN v.total_vaccinations_per_hundred < 66.666 THEN m.total_deaths END) OVER (PARTITION BY v.iso_code) - AVG(CASE WHEN v.total_vaccinations_per_hundred >= 66.666 THEN m.total_deaths END) OVER (PARTITION BY v.iso_code)),4) AS diferencia
+  FROM Vacunas v
+  JOIN Muertes m ON v.id = m.id AND v.iso_code = m.iso_code AND v.date = m.date
+  WHERE v.total_vaccinations_per_hundred BETWEEN 10 AND 90
+)
+SELECT DISTINCT  ON (iso_code) iso_code,
+       porcentajeVacunacion,
+       diferencia,
+       ROUND(muerte_promedio_antes,2) as muerte_promedio_antes,
+       ROUND(muerte_promedio_despues,2) as muerte_promedio_despues
+FROM (
+  SELECT t1.iso_code,
+         t1.muerte_promedio_antes,
+         t1.muerte_promedio_despues,
+         t1.diferencia,
+         t2.total_vaccinations_per_hundred as porcentajeVacunacion,
+         LEAD(ABS(t1.muerte_promedio_antes - t1.muerte_promedio_despues)) OVER (PARTITION BY t1.iso_code ORDER BY t2.total_vaccinations_per_hundred) as next_diff
+  FROM tasas_muerte t1
+  JOIN (
+    SELECT DISTINCT ON (iso_code) iso_code, total_vaccinations_per_hundred
+    FROM tasas_muerte
+  ) t2 ON t1.iso_code = t2.iso_code
+  WHERE t1.muerte_promedio_antes IS NOT NULL AND t1.muerte_promedio_despues IS NOT NULL
+) t3
+WHERE ABS(diferencia - next_diff) < 0.001 OR next_diff IS NULL
+ORDER BY iso_code, diferencia;
+
+
+-- Query 5
+SELECT p.continent,
+       SUM(c.new_cases_per_million) / SUM(d.population) AS tasa_crecimiento_per_capita
+FROM Pais p
+JOIN Casos c ON p.id = c.id AND p.iso_code = c.iso_code
+JOIN DatosGenerales d ON p.id = d.id AND p.iso_code = d.iso_code
+WHERE p.continent IS NOT NULL
+GROUP BY p.continent
+ORDER BY tasa_crecimiento_per_capita DESC;
 
 
 
