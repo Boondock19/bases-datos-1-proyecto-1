@@ -16,6 +16,7 @@ echo "Ya se encuentra descargado el archivo owid-covid-data"
 else wget "https://covid.ourworldindata.org/data/owid-covid-data.csv"
 fi
 
+echo "Escriba el nombre de su servidor en caso de no escribir sera localhost"
 echo -n "Server [localhost]: "
 read SERVER
 
@@ -24,14 +25,11 @@ then
     SERVER="localhost"
 fi
 
-echo -n "Database [postgres]: "
-read DATABASE
 
-if [ "$DATABASE" = "" ];
-then
-    DATABASE="OurWorldInData-1510627-1210921"
-fi
 
+DATABASE="OurWorldInData-1510627-1210921";
+
+echo "Escriba el nombre de su puerto en caso de no escribir sera 5432"
 echo -n "Port [5432]: "
 read PORT
 
@@ -40,6 +38,7 @@ then
     PORT="5432"
 fi
 
+echo "Escriba el nombre de su puerto en caso de no escribir sera boondock"
 echo -n "Username [postgres]: "
 read USERNAME
 

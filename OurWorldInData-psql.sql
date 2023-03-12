@@ -446,8 +446,6 @@ CREATE TABLE Politica (
     id serial  NOT NULL,
     stringency_index numeric ,
     CONSTRAINT Politica_pk PRIMARY KEY (id)
-    FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
-    FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE,
 );
 
 
@@ -461,8 +459,6 @@ CREATE TABLE Produccion (
     id serial  NOT NULL,
     reproduction_rate numeric,
     CONSTRAINT Produccion_pk PRIMARY KEY (id)
-    FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
-    FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE,
 );
 
 INSERT INTO  Produccion (id,reproduction_rate) 
@@ -471,39 +467,13 @@ WHERE reproduction_rate IS NOT NULL AND reproduction_rate <> 0.0
 ON CONFLICT (id) DO NOTHING;
 
 
--- Query 1 
-
--- Query 1
-SELECT id, date, new_cases, new_cases_smoothed, 
-       AVG(new_cases) OVER (ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS new_cases_7day_avg,
-       CASE WHEN new_cases = new_cases_smoothed THEN 'Igual' ELSE 'Distintos' END AS es_igual 
-FROM Casos
-ORDER BY(id) ASC;
-
 -- Query 1 Version 2
-SELECT id, date, new_cases, new_cases_smoothed, 
-       AVG(new_cases) OVER (PARTITION BY id ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) AS new_cases_7day_avg,
-       CASE WHEN new_cases = new_cases_smoothed THEN 'Igual' ELSE 'Distintos' END AS es_igual 
-FROM Casos;
-
--- -- CONSULTA DE TU AMIGO 
--- -- SELECT id, iso_code, date, new_cases, new_cases_smoothed, 
--- --        ROUND(AVG(new_cases) OVER (PARTITION BY iso_code ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW),3 )AS new_cases_7day_avg,
--- --        CASE WHEN new_cases = new_cases_smoothed THEN 'Same' ELSE 'Different' END AS is_same 
--- -- FROM Casos
--- -- ORDER BY(iso_code,date);
-
--- Query 2
-
-/* 
-
-Obtenemos el maximo valor de fecha de cada pais.
-SELECT c.iso_code,c.total_cases,c.date FROM Casos c WHERE c.date = (SELECT MAX(date) FROM Casos);
-
-Obtenemos el valor maximo de total case para cada pais
-SELECT iso_code,MAX(total_cases) FROM Casos GROUP BY iso_code;
-*/
-
+SELECT id, date, new_cases, new_cases_smoothed,
+       ROUND(AVG(new_cases) OVER (ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW),4 )AS new_cases_7day_avg,
+       CASE WHEN new_cases = new_cases_smoothed THEN 'Igual' ELSE 'Distintos' END AS es_igual
+FROM Casos
+WHERE new_cases IS NOT NULL AND new_cases_smoothed IS NOT NULL
+ORDER BY(id) ASC;
 
 /* Query 2 */
 /* 
@@ -512,7 +482,7 @@ SELECT iso_code,MAX(total_cases) FROM Casos GROUP BY iso_code;
     con el valor mas cercado a la mitad. Este valor es el siguiente
     superior a la mitad.
 */
-SELECT C.iso_code,C.total_cases,C.date FROM Casos C, 
+SELECT C.iso_code,C.total_cases as total_mas_cercano_al_max ,C.date FROM Casos C, 
 (WITH max_value AS (
     SELECT iso_code, MAX(total_cases) AS max_total_cases
     FROM Casos
@@ -526,14 +496,15 @@ WHERE C.iso_code = MQ.iso_code AND C.date = MQ.date ORDER BY C.iso_code;
 
 -- Query 5
 SELECT p.continent,
-    ((MAX(c.total_cases_per_million) - MIN(c.total_cases_per_million)) / MIN(c.total_cases_per_million)) * 100 AS tasa_crecimiento
+       SUM(c.new_cases_per_million) / SUM(d.population) AS tasa_crecimiento_per_capita
 FROM Pais p
-    JOIN Casos c ON p.id = c.id AND p.iso_code = c.iso_code
-WHERE c.total_cases_per_million IS NOT NULL
-GROUP BY (p.continent)
-ORDER BY (tasa_crecimiento) DESC;
+JOIN Casos c ON p.id = c.id AND p.iso_code = c.iso_code
+JOIN DatosGenerales d ON p.id = d.id AND p.iso_code = d.iso_code
+WHERE p.continent IS NOT NULL
+GROUP BY p.continent
+ORDER BY tasa_crecimiento_per_capita DESC;
 
--- 3?---
+-- 3 ---
 
 SELECT v.iso_code,
        MAX(CASE WHEN v.total_vaccinations_per_hundred >= 66.666 THEN m.total_deaths END) as muerte_promedio_despues,
@@ -547,30 +518,3 @@ HAVING MAX(v.total_vaccinations_per_hundred) >= 66.666
 
 
 
-WITH vaccination_rates AS (
-  SELECT iso_code,
-         MAX(CASE WHEN people_fully_vaccinated_per_hundred >= 66.666 THEN date END) AS vaccination_date
-  FROM Vacunas
-  GROUP BY iso_code
-),
-pre_vaccination_rates AS (
-  SELECT Muertes.iso_code,
-         AVG(Muertes.new_deaths) AS avg_pre_vaccination_deaths
-  FROM Muertes
-  JOIN vaccination_rates ON Muertes.iso_code = vaccination_rates.iso_code
-  WHERE Muertes.date < vaccination_rates.vaccination_date
-  GROUP BY Muertes.iso_code
-),
-post_vaccination_rates AS (
-  SELECT Muertes.iso_code,
-         AVG(Muertes.new_deaths) AS avg_post_vaccination_deaths
-  FROM Muertes
-  JOIN vaccination_rates ON Muertes.iso_code = vaccination_rates.iso_code
-  WHERE Muertes.date >= vaccination_rates.vaccination_date
-  GROUP BY Muertes.iso_code
-)
-SELECT pre_vaccination_rates.iso_code,
-       pre_vaccination_rates.avg_pre_vaccination_deaths,
-       post_vaccination_rates.avg_post_vaccination_deaths
-FROM pre_vaccination_rates
-JOIN post_vaccination_rates ON pre_vaccination_rates.iso_code = post_vaccination_rates.iso_code;
