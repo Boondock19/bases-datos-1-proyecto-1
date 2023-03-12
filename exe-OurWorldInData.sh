@@ -50,6 +50,7 @@ fi
 dropdb -U $USERNAME -i -e $DATABASE
 createdb -U $USERNAME -e $DATABASE
 'psql' -U $USERNAME -d $DATABASE -a -f "OurWorldInData-psql.sql"
+'psql' -U $USERNAME -d $DATABASE -a -f "Queries.sql"
 "psql" -h $SERVER -p $PORT -U $USERNAME $DATABASE
 
 
