@@ -446,6 +446,8 @@ CREATE TABLE Politica (
     id serial  NOT NULL,
     stringency_index numeric ,
     CONSTRAINT Politica_pk PRIMARY KEY (id)
+    FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE,
 );
 
 
@@ -459,6 +461,8 @@ CREATE TABLE Produccion (
     id serial  NOT NULL,
     reproduction_rate numeric,
     CONSTRAINT Produccion_pk PRIMARY KEY (id)
+    FOREIGN KEY (id,iso_code) REFERENCES Pais(id,iso_code) ON UPDATE CASCADE,
+    FOREIGN KEY (id,date,iso_code) REFERENCES Date(id,date,iso_code) ON UPDATE CASCADE,
 );
 
 INSERT INTO  Produccion (id,reproduction_rate) 

@@ -29,7 +29,7 @@ read DATABASE
 
 if [ "$DATABASE" = "" ];
 then
-    DATABASE="test-created"
+    DATABASE="OurWorldInData-1510627-1210921"
 fi
 
 echo -n "Port [5432]: "
